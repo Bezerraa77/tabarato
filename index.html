@@ -422,12 +422,12 @@ function renderLinhaDireta(p) {
 
 // ── API MERCADO LIVRE ──
 async function buscarML(query) {
-  const url = '/api/buscar-ml?q=' + encodeURIComponent(query) + '&limit=12';
+  const url = 'https://api.mercadolibre.com/sites/MLB/search?q=' + encodeURIComponent(query) + '&limit=12';
   setOutput('<div class="loading"><div class="spinner"></div><p>Conectando ao Mercado Livre...</p></div>');
   try {
     const resp = await fetch(url);
     if (!resp.ok) {
-      setOutput('<div class="erro"><h2>Erro ' + resp.status + '</h2><p>Não foi possível conectar ao Mercado Livre. Tente novamente.</p></div>');
+      setOutput('<div class="erro"><h2>Erro ' + resp.status + '</h2><p>Erro ao buscar produtos. Tente novamente em instantes.</p></div>');
       return [];
     }
     const data = await resp.json();
