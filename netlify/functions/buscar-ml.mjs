@@ -12,10 +12,17 @@ export default async (req) => {
 
   try {
     const mlUrl = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(query)}&limit=${limit}`;
-    const resp = await fetch(mlUrl);
+    const resp = await fetch(mlUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/json',
+        'Accept-Language': 'pt-BR,pt;q=0.9',
+      }
+    });
 
     if (!resp.ok) {
-      return new Response(JSON.stringify({ error: 'Erro ML: ' + resp.status }), {
+      const errText = await resp.text();
+      return new Response(JSON.stringify({ error: `ML ${resp.status}: ${errText}` }), {
         status: resp.status,
         headers: { 'Content-Type': 'application/json' }
       });
