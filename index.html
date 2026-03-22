@@ -422,36 +422,43 @@ function renderLinhaDireta(p) {
 
 // ── API MERCADO LIVRE ──
 async function buscarML(query) {
-  const url = '/api/buscar-ml?q=' + encodeURIComponent(query) + '&limit=12';
   setOutput('<div class="loading"><div class="spinner"></div><p>Conectando ao Mercado Livre...</p></div>');
-  try {
-    const resp = await fetch(url);
-    if (!resp.ok) {
-      setOutput('<div class="erro"><h2>Erro ' + resp.status + '</h2><p>Erro ao buscar produtos. Tente novamente em instantes.</p></div>');
-      return [];
+
+  // Tenta função serverless primeiro, depois fallback direto
+  const urls = [
+    '/api/buscar-ml?q=' + encodeURIComponent(query) + '&limit=12',
+    'https://api.mercadolibre.com/sites/MLB/search?q=' + encodeURIComponent(query) + '&limit=12'
+  ];
+
+  for (const url of urls) {
+    try {
+      const resp = await fetch(url);
+      if (!resp.ok) continue;
+      const data = await resp.json();
+      const results = data.results || [];
+      if (results.length === 0) {
+        setOutput('<div class="vazio"><h2>Nenhum produto encontrado</h2><p>Tente outro termo de busca</p></div>');
+        return [];
+      }
+      return results.map(item => {
+        const orig     = item.original_price || null;
+        const price    = item.price;
+        const discount = orig ? Math.round((1 - price / orig) * 100) : 0;
+        return {
+          store: 'ml', title: item.title, price,
+          originalPrice: orig, discount,
+          freeShipping: item.shipping?.free_shipping || false,
+          thumbnail: (item.thumbnail || '').replace('http:', 'https:'),
+          url: item.permalink
+        };
+      });
+    } catch (e) {
+      continue;
     }
-    const data = await resp.json();
-    const results = data.results || [];
-    if (results.length === 0) {
-      setOutput('<div class="vazio"><h2>Nenhum produto encontrado</h2><p>Tente outro termo de busca</p></div>');
-      return [];
-    }
-    return results.map(item => {
-      const orig     = item.original_price || null;
-      const price    = item.price;
-      const discount = orig ? Math.round((1 - price / orig) * 100) : 0;
-      return {
-        store: 'ml', title: item.title, price,
-        originalPrice: orig, discount,
-        freeShipping: item.shipping?.free_shipping || false,
-        thumbnail: (item.thumbnail || '').replace('http:', 'https:'),
-        url: item.permalink
-      };
-    });
-  } catch (e) {
-    setOutput('<div class="erro"><h2>Ops! Falha na busca</h2><p>Erro: ' + e.message + '</p><p style="margin-top:8px;font-size:12px;color:var(--texto2);">Verifique sua conexão e tente novamente.</p></div>');
-    return [];
   }
+
+  setOutput('<div class="erro"><h2>Ops! Falha na busca</h2><p>Não foi possível conectar. Tente novamente.</p></div>');
+  return [];
 }
 
 // ── HELPER ──
