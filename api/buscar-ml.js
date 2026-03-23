@@ -6,18 +6,38 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Pegar Access Token com Client Credentials
+    const clientId = process.env.ML_CLIENT_ID;
+    const clientSecret = process.env.ML_CLIENT_SECRET;
+
+    const tokenResp = await fetch('https://api.mercadolibre.com/oauth/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `grant_type=client_credentials&client_id=${clientId}&client_secret=${clientSecret}`
+    });
+
+    const tokenData = await tokenResp.json();
+    const accessToken = tokenData.access_token;
+
+    if (!accessToken) {
+      return res.status(401).json({ error: 'Token inválido', details: tokenData });
+    }
+
+    // Buscar produtos com o token
     const mlUrl = `https://api.mercadolibre.com/sites/MLB/search?q=${encodeURIComponent(q)}&limit=${limit}`;
-    const resp = await fetch(mlUrl, {
+    const mlResp = await fetch(mlUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; TaBarato/1.0)',
-        'Accept': 'application/json',
-        'Accept-Language': 'pt-BR,pt;q=0.9',
+        'Authorization': `Bearer ${accessToken}`,
+        'Accept': 'application/json'
       }
     });
 
-    const data = await resp.json();
+    const data = await mlResp.json();
+
     res.setHeader('Access-Control-Allow-Origin', '*');
-    return res.status(resp.status).json(data);
+    res.setHeader('Cache-Control', 's-maxage=300');
+    return res.status(200).json(data);
+
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }

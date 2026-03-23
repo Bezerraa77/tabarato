@@ -423,7 +423,7 @@ function renderLinhaDireta(p) {
 // ── API MERCADO LIVRE ──
 async function buscarML(query) {
   try {
-    const resp = await fetch('https://api.mercadolibre.com/sites/MLB/search?q=' + encodeURIComponent(query) + '&limit=12');
+    const resp = await fetch('/api/buscar-ml?q=' + encodeURIComponent(query) + '&limit=12');
     if (!resp.ok) throw new Error('status ' + resp.status);
     const data = await resp.json();
     const results = data.results || [];
